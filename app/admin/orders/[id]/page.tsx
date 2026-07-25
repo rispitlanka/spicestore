@@ -71,12 +71,29 @@ interface OrderItemDetail {
   } | null
 }
 
+interface OrderEmailLogEntry {
+  id: string
+  order_id: string
+  event_type: string
+  status: 'sent' | 'failed'
+  error_message: string | null
+  sent_at: string
+}
+
 const ALLOWED_STATUSES = [
   { value: 'pending', label: 'Pending' },
   { value: 'confirmed', label: 'Confirmed' },
   { value: 'shipped', label: 'Shipped' },
   { value: 'delivered', label: 'Delivered' },
   { value: 'cancelled', label: 'Cancelled' },
+]
+
+const STAGE_EMAIL_EVENTS = [
+  { key: 'orderPlaced', label: 'Order Placed Email' },
+  { key: 'orderConfirmed', label: 'Order Confirmed Email' },
+  { key: 'orderShipped', label: 'Order Shipped Email' },
+  { key: 'orderDelivered', label: 'Order Delivered Email' },
+  { key: 'orderCancelled', label: 'Order Cancelled Email' },
 ]
 
 export default function AdminOrderDetailPage({
@@ -96,6 +113,26 @@ export default function AdminOrderDetailPage({
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false)
   const [statusSuccess, setStatusSuccess] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+
+  // Email logs & resend state
+  const [emailLogs, setEmailLogs] = useState<OrderEmailLogEntry[]>([])
+  const [isLoadingLogs, setIsLoadingLogs] = useState(false)
+  const [isResendingEvent, setIsResendingEvent] = useState<string | null>(null)
+
+  const fetchEmailLogs = async (targetOrderId: string) => {
+    try {
+      setIsLoadingLogs(true)
+      const res = await fetch(`/api/admin/orders/${targetOrderId}/email-logs`)
+      const json = await res.json()
+      if (json.success && Array.isArray(json.data)) {
+        setEmailLogs(json.data)
+      }
+    } catch (err) {
+      console.error('Error fetching email logs:', err)
+    } finally {
+      setIsLoadingLogs(false)
+    }
+  }
 
   useEffect(() => {
     let active = true
@@ -140,6 +177,7 @@ export default function AdminOrderDetailPage({
           setOrder(orderData as unknown as OrderDetails)
           setSelectedStatus(orderData.status || 'pending')
           setOrderItems((itemsData as unknown as OrderItemDetail[]) || [])
+          fetchEmailLogs(orderData.id)
         }
       } catch (err: unknown) {
         if (active) {
@@ -185,6 +223,26 @@ export default function AdminOrderDetailPage({
       setSelectedStatus(newStatus)
       setStatusSuccess(`Order status updated to "${newStatus.toUpperCase()}" successfully!`)
 
+      // Trigger status update email notification
+      const eventTypeMap: Record<string, string> = {
+        confirmed: 'orderConfirmed',
+        shipped: 'orderShipped',
+        delivered: 'orderDelivered',
+        cancelled: 'orderCancelled',
+        pending: 'orderPlaced',
+      }
+      const eventType = eventTypeMap[newStatus.toLowerCase()]
+
+      if (eventType) {
+        fetch('/api/orders/send-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ orderId: order.id, eventType }),
+        })
+          .then(() => fetchEmailLogs(order.id))
+          .catch((emailErr) => console.error('Status change email error:', emailErr))
+      }
+
       setTimeout(() => setStatusSuccess(null), 4000)
     } catch (err: unknown) {
       console.error('Error updating order status:', err)
@@ -193,6 +251,70 @@ export default function AdminOrderDetailPage({
     } finally {
       setIsUpdatingStatus(false)
     }
+  }
+
+  const handleResendEmail = async (eventType: string) => {
+    if (!order) return
+
+    try {
+      setIsResendingEvent(eventType)
+      setStatusSuccess(null)
+      setError(null)
+
+      const res = await fetch('/api/orders/send-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId: order.id, eventType }),
+      })
+
+      const json = await res.json()
+      if (json.success) {
+        setStatusSuccess(`Email notification (${eventType}) triggered successfully!`)
+      } else {
+        setError(`Email sending notice: ${json.error || 'Check Brevo API config or logs.'}`)
+      }
+      await fetchEmailLogs(order.id)
+    } catch (err: any) {
+      console.error('Resend email error:', err)
+      setError(`Failed to resend email: ${err?.message || 'Network error'}`)
+    } finally {
+      setIsResendingEvent(null)
+    }
+  }
+
+  const formatEventLabel = (eventType: string): string => {
+    switch (eventType) {
+      case 'orderPlaced':
+        return 'Order Placed'
+      case 'orderConfirmed':
+        return 'Order Confirmed'
+      case 'orderShipped':
+        return 'Order Shipped'
+      case 'orderDelivered':
+        return 'Order Delivered'
+      case 'orderCancelled':
+        return 'Order Cancelled'
+      default:
+        return eventType
+    }
+  }
+
+  const [nowMs, setNowMs] = useState<number>(0)
+
+  useEffect(() => {
+    setNowMs(Date.now())
+  }, [])
+
+  const formatTimeAgo = (dateString: string): string => {
+    if (!nowMs) return 'recently'
+    const diffMs = nowMs - new Date(dateString).getTime()
+    const diffMins = Math.floor(diffMs / (1000 * 60))
+    if (diffMins < 1) return 'just now'
+    if (diffMins < 60) return `${diffMins} min ago`
+    const diffHours = Math.floor(diffMins / 60)
+    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`
+    const diffDays = Math.floor(diffHours / 24)
+    return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`
   }
 
   if (isLoading) {
@@ -261,6 +383,13 @@ export default function AdminOrderDetailPage({
       {statusSuccess && (
         <div className="p-3 rounded-sm border border-[#E7ECE8] bg-white text-[#2F6B3C] text-xs font-normal">
           {statusSuccess}
+        </div>
+      )}
+
+      {/* Error Callout */}
+      {error && (
+        <div className="p-3 rounded-sm border border-[#E7ECE8] bg-white text-[#C53030] text-xs font-normal">
+          {error}
         </div>
       )}
 
@@ -369,6 +498,7 @@ export default function AdminOrderDetailPage({
 
         {/* Right Column */}
         <div className="md:col-span-5 space-y-6">
+          {/* Financial Breakdown */}
           <div className="border border-[#E7ECE8] rounded-sm p-6 bg-white space-y-4 text-xs sm:text-sm">
             <h2 className="text-base font-semibold text-[#1C2521] border-b border-[#E7ECE8] pb-3">
               Financial Breakdown
@@ -431,9 +561,88 @@ export default function AdminOrderDetailPage({
               )}
             </div>
           </div>
+
+          {/* Email Notifications & Audit Logs Box */}
+          <div className="border border-[#E7ECE8] rounded-sm p-6 bg-white space-y-4 text-xs">
+            <div className="flex items-center justify-between border-b border-[#E7ECE8] pb-3">
+              <h2 className="text-base font-semibold text-[#1C2521]">
+                Email Log & Actions
+              </h2>
+              <button
+                type="button"
+                onClick={() => fetchEmailLogs(order.id)}
+                disabled={isLoadingLogs}
+                className="text-[11px] text-[#6B7570] hover:text-[#1C2521] underline"
+              >
+                {isLoadingLogs ? 'Refreshing...' : 'Refresh'}
+              </button>
+            </div>
+
+            {/* Email Dispatch Audit History */}
+            <div className="space-y-3">
+              <h3 className="text-xs font-semibold text-[#6B7570] uppercase tracking-wider">
+                Sent Email Logs ({emailLogs.length})
+              </h3>
+
+              {emailLogs.length === 0 ? (
+                <p className="text-xs text-[#6B7570] italic">No email notifications sent yet for this order.</p>
+              ) : (
+                <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                  {emailLogs.map((log) => (
+                    <div
+                      key={log.id}
+                      className="p-2.5 rounded-sm border border-[#E7ECE8] bg-[#F4F6F4]/30 space-y-1"
+                    >
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="font-medium text-[#1C2521]">
+                          {formatEventLabel(log.event_type)} email sent
+                        </span>
+                        <span
+                          className={
+                            log.status === 'sent'
+                              ? 'text-[#2F6B3C] font-semibold uppercase text-[10px]'
+                              : 'text-[#C53030] font-semibold uppercase text-[10px]'
+                          }
+                        >
+                          {log.status} — {formatTimeAgo(log.sent_at)}
+                        </span>
+                      </div>
+
+                      {log.error_message && (
+                        <p className="text-[11px] text-[#C53030] bg-white p-1.5 rounded border border-[#E7ECE8] font-mono leading-tight">
+                          {log.error_message}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Manual Resend Buttons */}
+            <div className="border-t border-[#E7ECE8] pt-4 space-y-2">
+              <h3 className="text-xs font-semibold text-[#6B7570] uppercase tracking-wider">
+                Manual Resend Options
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {STAGE_EMAIL_EVENTS.map((stage) => (
+                  <Button
+                    key={stage.key}
+                    variant="secondary"
+                    size="sm"
+                    className="w-full justify-start text-[11px] py-1.5 px-2"
+                    onClick={() => handleResendEmail(stage.key)}
+                    disabled={isResendingEvent !== null}
+                  >
+                    {isResendingEvent === stage.key ? 'Sending...' : `Resend ${stage.label.replace(' Email', '')}`}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          </div>
+
         </div>
       </div>
     </div>
   )
 }
-

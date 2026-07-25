@@ -1,16 +1,59 @@
-import React from 'react'
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { ProductCard } from '@/components/molecules/ProductCard'
 import { EmptyState } from '@/components/atoms/EmptyState'
 import { Button } from '@/components/atoms/Button'
+import { getSiteSettings } from '@/lib/settings'
 
 export const revalidate = 60
 
 export interface CategoryPageProps {
   params: Promise<{ slug: string }>
 }
+
+export async function generateMetadata({ params }: CategoryPageProps): Promise<Metadata> {
+  const { slug } = await params
+  const supabase = (await createClient()) as any
+  const settings = await getSiteSettings()
+  const siteIdentity = settings.site_identity
+
+  const siteTitle = siteIdentity?.site_title?.trim() || 'Yarl Samayal'
+  const defaultDescription =
+    siteIdentity?.meta_description?.trim() ||
+    'Authentic Jaffna spice blends, savory snacks, and traditional Sri Lankan delicacies.'
+
+  const { data: category } = await supabase
+    .from('categories')
+    .select('*')
+    .eq('slug', slug)
+    .eq('is_active', true)
+    .single()
+
+  if (!category) {
+    return {
+      title: { absolute: `Category Not Found | ${siteTitle}` },
+      description: defaultDescription,
+    }
+  }
+
+  const titleString = `${category.name} | ${siteTitle}`
+  const description = `Shop ${category.name} at ${siteTitle} — authentic Jaffna spices and snacks, delivered.`
+  const categoryImage = category.image_url || category.image || siteIdentity?.logo_url || null
+
+  return {
+    title: { absolute: titleString },
+    description,
+    openGraph: {
+      title: titleString,
+      description,
+      type: 'website',
+      ...(categoryImage ? { images: [{ url: categoryImage, alt: category.name }] } : {}),
+    },
+  }
+}
+
 
 export default async function CategoryPage({ params }: CategoryPageProps) {
   const { slug } = await params

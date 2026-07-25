@@ -4,7 +4,6 @@ import {
   convertBaseAmount,
   detectCurrencyFromCountry,
   getCurrencyInfo,
-  DEFAULT_CURRENCIES,
   BASE_CURRENCY,
 } from './currency'
 

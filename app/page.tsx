@@ -1,11 +1,36 @@
-import React from 'react'
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { ProductCard } from '@/components/molecules/ProductCard'
 import { EmptyState } from '@/components/atoms/EmptyState'
 import { Button } from '@/components/atoms/Button'
+import { getSiteSettings } from '@/lib/settings'
 
 export const revalidate = 60
+
+export async function generateMetadata(): Promise<Metadata> {
+  const settings = await getSiteSettings()
+  const siteIdentity = settings.site_identity
+
+  const title = siteIdentity?.site_title?.trim() || 'Yarl Samayal'
+  const tagline = siteIdentity?.site_tagline?.trim()
+  const fullTitle = tagline ? `${title} - ${tagline}` : `${title} - Authentic Jaffna Spices & Snacks`
+  const description =
+    siteIdentity?.meta_description?.trim() ||
+    'Authentic Jaffna spice blends, savory snacks, and traditional Sri Lankan delicacies.'
+
+  return {
+    title: { absolute: fullTitle },
+    description,
+    openGraph: {
+      title: fullTitle,
+      description,
+      type: 'website',
+      ...(siteIdentity?.logo_url ? { images: [{ url: siteIdentity.logo_url, alt: title }] } : {}),
+    },
+  }
+}
+
 
 interface ProductItem {
   id: string

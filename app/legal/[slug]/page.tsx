@@ -4,6 +4,8 @@ import { notFound } from 'next/navigation'
 import ReactMarkdown from 'react-markdown'
 import { createClient } from '@/lib/supabase/server'
 import { LegalPage } from '@/types/database'
+import { getSiteSettings } from '@/lib/settings'
+import { stripMarkdown, truncateText } from '@/lib/seo'
 
 export const revalidate = 3600 // Cache for 1 hour
 
@@ -35,16 +37,33 @@ async function getLegalPage(slug: string): Promise<LegalPage | null> {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const resolvedParams = await params
   const page = await getLegalPage(resolvedParams.slug)
+  const settings = await getSiteSettings()
+  const siteIdentity = settings.site_identity
+
+  const siteTitle = siteIdentity?.site_title?.trim() || 'Yarl Samayal'
+  const defaultDescription =
+    siteIdentity?.meta_description?.trim() ||
+    'Authentic Jaffna spice blends, savory snacks, and traditional Sri Lankan delicacies.'
 
   if (!page) {
     return {
-      title: 'Page Not Found | Yarl Samayal',
+      title: { absolute: `Page Not Found | ${siteTitle}` },
+      description: defaultDescription,
     }
   }
 
+  const titleString = `${page.title} | ${siteTitle}`
+  const rawDesc = page.content ? stripMarkdown(page.content) : ''
+  const description = rawDesc ? truncateText(rawDesc, 155) : defaultDescription
+
   return {
-    title: `${page.title} | Yarl Samayal`,
-    description: `Read our official ${page.title} for Yarl Samayal authentic Jaffna spices and regional products.`,
+    title: { absolute: titleString },
+    description,
+    openGraph: {
+      title: titleString,
+      description,
+      type: 'website',
+    },
   }
 }
 

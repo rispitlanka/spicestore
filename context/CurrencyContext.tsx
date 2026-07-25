@@ -79,7 +79,6 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   // Fetch exchange rates from database or endpoint
   const fetchRates = useCallback(async () => {
     try {
-      setLoading(true)
       let fetchedFromDb = false
 
       try {

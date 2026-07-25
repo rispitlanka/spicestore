@@ -21,7 +21,7 @@ try {
   console.error('Error loading .env.local:', err)
 }
 
-const migrationPath = path.resolve(process.cwd(), 'supabase/migrations/20260725000008_legal_pages.sql')
+const migrationPath = path.resolve(process.cwd(), 'supabase/migrations/20260726000001_performance_indexes.sql')
 const sql = fs.readFileSync(migrationPath, 'utf8')
 
 async function applyMigration() {

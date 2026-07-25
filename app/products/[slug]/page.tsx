@@ -1,13 +1,63 @@
-import React from 'react'
+import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { ProductDetailView } from '@/components/organisms/ProductDetailView'
+import { getSiteSettings } from '@/lib/settings'
+import { stripMarkdown, truncateText, getProductMainImageUrl } from '@/lib/seo'
 
 export const revalidate = 60
 
 export interface ProductDetailPageProps {
   params: Promise<{ slug: string }>
 }
+
+export async function generateMetadata({ params }: ProductDetailPageProps): Promise<Metadata> {
+  const { slug } = await params
+  const supabase = (await createClient()) as any
+  const settings = await getSiteSettings()
+  const siteIdentity = settings.site_identity
+
+  const siteTitle = siteIdentity?.site_title?.trim() || 'Yarl Samayal'
+  const defaultDescription =
+    siteIdentity?.meta_description?.trim() ||
+    'Authentic Jaffna spice blends, savory snacks, and traditional Sri Lankan delicacies.'
+
+  const { data: product } = await supabase
+    .from('products')
+    .select(`
+      *,
+      categories (id, name, slug),
+      product_images (id, url, sort_order, is_main, cloudinary_public_id, variation_id),
+      product_variations (*)
+    `)
+    .eq('slug', slug)
+    .eq('is_active', true)
+    .single()
+
+  if (!product) {
+    return {
+      title: { absolute: `Product Not Found | ${siteTitle}` },
+      description: defaultDescription,
+    }
+  }
+
+  const titleString = `${product.name} | ${siteTitle}`
+  const rawDesc = product.description ? stripMarkdown(product.description) : ''
+  const description = rawDesc ? truncateText(rawDesc, 155) : defaultDescription
+  const mainImageUrl = getProductMainImageUrl(product)
+
+  return {
+    title: { absolute: titleString },
+    description,
+    openGraph: {
+      title: titleString,
+      description,
+      type: 'website',
+      ...(mainImageUrl ? { images: [{ url: mainImageUrl, alt: product.name }] } : {}),
+    },
+  }
+}
+
 
 export default async function ProductDetailPage({ params }: ProductDetailPageProps) {
   const { slug } = await params

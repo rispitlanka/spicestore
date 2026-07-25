@@ -241,7 +241,7 @@ export default function MenuManagementPage() {
     } else {
       // Add new item to current location
       const newItem: MenuItem = {
-        id: `temp-${Date.now()}`,
+        id: `temp-${crypto.randomUUID()}`,
         label: formLabel.trim(),
         link_type: formLinkType,
         category_id: catId,

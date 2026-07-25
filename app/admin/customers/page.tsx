@@ -15,7 +15,6 @@ interface CustomerRow {
   guest_email?: string
   phone: string | null
   guest_phone?: string | null
-  default_address: string | null
   signup_date: string
   last_order_date: string | null
   order_count: number

@@ -25,7 +25,6 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const fetchSettings = useCallback(async () => {
     try {
-      setLoading(true)
       const supabase = createClient() as any
       const { data, error } = await supabase.from('settings').select('key, value')
       if (!error && data) {
@@ -42,7 +41,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   }, [])
 
   useEffect(() => {
-    fetchSettings()
+    void fetchSettings()
   }, [fetchSettings])
 
   const updateSetting = async (key: string, value: any): Promise<boolean> => {

@@ -11,6 +11,7 @@
     "seed": "npx tsx scripts/seed.ts"
   },
   "dependencies": {
+    "@getbrevo/brevo": "^6.0.2",
     "@supabase/ssr": "^0.12.3",
     "@supabase/supabase-js": "^2.110.8",
     "cloudinary": "^2.10.0",

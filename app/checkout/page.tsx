@@ -460,6 +460,19 @@ export default function CheckoutPage() {
         }
       }
 
+      // Trigger orderPlaced transactional email non-blockingly
+      try {
+        fetch('/api/orders/send-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ orderId, eventType: 'orderPlaced' }),
+        }).catch((emailErr) => {
+          console.error('Non-blocking orderPlaced email trigger error:', emailErr)
+        })
+      } catch (emailCatch) {
+        console.error('Failed to trigger orderPlaced email:', emailCatch)
+      }
+
       if (typeof window !== 'undefined') {
         sessionStorage.removeItem(APPLIED_COUPON_KEY)
       }

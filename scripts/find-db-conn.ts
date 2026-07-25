@@ -29,8 +29,7 @@ async function testAll() {
               connectionTimeoutMillis: 3000,
             })
             await client.connect()
-            console.log('🎉 FOUND WORKING CONNECTION! 🎉')
-            console.log({ host, port, user, pass })
+            console.log('SUCCESS:', { host, port, user, pass })
             await client.end()
             return { host, port, user, pass }
           } catch (err: any) {

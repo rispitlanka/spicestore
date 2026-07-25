@@ -1,15 +1,34 @@
-import React from 'react'
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { searchProducts } from '@/lib/search/searchProducts'
 import { ProductCard } from '@/components/molecules/ProductCard'
 import { EmptyState } from '@/components/atoms/EmptyState'
 import { Button } from '@/components/atoms/Button'
+import { getSiteSettings } from '@/lib/settings'
 
 export const revalidate = 0
 
 interface SearchPageProps {
   searchParams: Promise<{ q?: string }>
 }
+
+export async function generateMetadata({ searchParams }: SearchPageProps): Promise<Metadata> {
+  const { q } = await searchParams
+  const query = (q || '').trim()
+  const settings = await getSiteSettings()
+  const siteTitle = settings.site_identity?.site_title?.trim() || 'Yarl Samayal'
+
+  const titleString = query ? `Search results for '${query}' | ${siteTitle}` : `Search | ${siteTitle}`
+
+  return {
+    title: { absolute: titleString },
+    robots: {
+      index: false,
+      follow: true,
+    },
+  }
+}
+
 
 export default async function SearchPage({ searchParams }: SearchPageProps) {
   const { q } = await searchParams

@@ -143,26 +143,8 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }
 
-    if (result.shouldUpdateProfileWithGuestDefault && user) {
-      const supabase = createClient() as any
-      void (async () => {
-        try {
-          const { error } = await supabase
-            .from('customer_profiles')
-            .update({ default_country_id: result.countryId })
-            .eq('id', user.id)
-
-          if (!error) {
-            await refreshProfile()
-          }
-        } catch (err) {
-          console.error('Failed to apply guest default country to profile:', err)
-        }
-      })()
-    }
-
     setHasPrefilledCountry(true)
-  }, [isHydrated, authLoading, user, profile, hasPrefilledCountry, refreshProfile])
+  }, [isHydrated, authLoading, user, profile, hasPrefilledCountry])
 
   // Capture logic when country selection changes
   const setSelectedCountryId = useCallback(
