@@ -218,7 +218,7 @@ export default function CustomerOrderDetailPage({
               {order.status}
             </span>
           </div>
-          <p className="text-xs text-[#6B7570] mt-1">
+          <p className="text-xs text-[#6B7570] mt-1" suppressHydrationWarning>
             Placed on{' '}
             {new Date(order.created_at).toLocaleDateString('en-US', {
               year: 'numeric',

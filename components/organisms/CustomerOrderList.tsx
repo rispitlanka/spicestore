@@ -102,7 +102,7 @@ export function CustomerOrderList({ orders, title = 'Order History' }: CustomerO
               <div className="grid grid-cols-2 gap-2 text-xs text-[#6B7570] border-t border-b border-[#E7ECE8] py-2">
                 <div>
                   <span className="block text-[10px] text-[#6B7570]/70 uppercase">Date</span>
-                  <span className="text-[#1C2521]">
+                  <span className="text-[#1C2521]" suppressHydrationWarning>
                     {new Date(order.created_at).toLocaleDateString('en-US', {
                       month: 'short',
                       day: 'numeric',
@@ -175,7 +175,7 @@ export function CustomerOrderList({ orders, title = 'Order History' }: CustomerO
                       </Link>
                     </td>
 
-                    <td className="py-3 px-4 text-xs text-[#6B7570] whitespace-nowrap">
+                    <td className="py-3 px-4 text-xs text-[#6B7570] whitespace-nowrap" suppressHydrationWarning>
                       {new Date(order.created_at).toLocaleDateString('en-US', {
                         month: 'short',
                         day: 'numeric',

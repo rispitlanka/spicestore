@@ -328,7 +328,7 @@ export default function AccountPage() {
                         <span className="font-mono font-medium text-[#1C2521]">
                           {formatOrderId(order.id)}
                         </span>
-                        <span className="text-[#6B7570]">
+                        <span className="text-[#6B7570]" suppressHydrationWarning>
                           {new Date(order.created_at).toLocaleDateString('en-US', {
                             year: 'numeric',
                             month: 'short',

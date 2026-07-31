@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils'
 import { useCurrency } from '@/context/CurrencyContext'
 import { formatCurrencyAmount } from '@/lib/currency'
 
-export interface PriceTagProps extends React.HTMLAttributes<HTMLDivElement> {
+export interface PriceTagProps extends React.HTMLAttributes<HTMLSpanElement> {
   /** Numeric price amount. Assumed to be in BASE currency (e.g. USD) unless explicit `currency` is passed. */
   amount: number
   /** Optional explicit currency code (e.g. 'LKR', 'USD'). If passed, amount is rendered in this currency without conversion. */
@@ -72,7 +72,7 @@ export const PriceTag: React.FC<PriceTagProps> = ({
   const hasDiscount = originalAmount !== undefined && originalAmount > amount
 
   return (
-    <div className={cn('inline-flex items-baseline gap-2 font-sans', className)} {...props}>
+    <span className={cn('inline-flex items-baseline gap-2 font-sans', className)} {...props}>
       <span className={cn('text-[#2F6B3C] font-medium tracking-tight', mainSizes[size])}>
         {formattedMain}
       </span>
@@ -81,6 +81,6 @@ export const PriceTag: React.FC<PriceTagProps> = ({
           {formattedOriginal}
         </span>
       )}
-    </div>
+    </span>
   )
 }
