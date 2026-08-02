@@ -44,6 +44,24 @@ export interface FooterLayoutSetting {
   columns: FooterLayoutColumn[]
 }
 
+export interface HeroSliderConfigSetting {
+  height_desktop_px: number
+  height_mobile_px: number
+}
+
+export interface AnnouncementBarMessage {
+  text: string
+  link_url?: string
+}
+
+export interface AnnouncementBarSetting {
+  is_active: boolean
+  messages: AnnouncementBarMessage[]
+  background_color: string
+  text_color: string
+  dismissible: boolean
+}
+
 export interface SiteSettings {
   low_stock_threshold: number
   store_currency: {
@@ -60,6 +78,8 @@ export interface SiteSettings {
   footer_social: FooterSocialSetting
   footer_copyright: FooterCopyrightSetting
   footer_layout: FooterLayoutSetting
+  hero_slider_config: HeroSliderConfigSetting
+  announcement_bar: AnnouncementBarSetting
 }
 
 export const DEFAULT_SITE_IDENTITY: SiteIdentitySetting = {
@@ -103,6 +123,21 @@ export const DEFAULT_FOOTER_LAYOUT: FooterLayoutSetting = {
   ],
 }
 
+export const DEFAULT_HERO_SLIDER_CONFIG: HeroSliderConfigSetting = {
+  height_desktop_px: 400,
+  height_mobile_px: 220,
+}
+
+export const DEFAULT_ANNOUNCEMENT_BAR: AnnouncementBarSetting = {
+  is_active: false,
+  messages: [
+    { text: 'Free shipping on orders above $50', link_url: '' }
+  ],
+  background_color: '#2F6B3C',
+  text_color: '#FFFFFF',
+  dismissible: true,
+}
+
 export const DEFAULT_SETTINGS: SiteSettings = {
   low_stock_threshold: 5,
   store_currency: {
@@ -119,6 +154,8 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   footer_social: DEFAULT_FOOTER_SOCIAL,
   footer_copyright: DEFAULT_FOOTER_COPYRIGHT,
   footer_layout: DEFAULT_FOOTER_LAYOUT,
+  hero_slider_config: DEFAULT_HERO_SLIDER_CONFIG,
+  announcement_bar: DEFAULT_ANNOUNCEMENT_BAR,
 }
 
 /**
@@ -197,6 +234,31 @@ export function parseSettingsRows(rows: Array<{ key: string; value: any }> | nul
     return defaultVal
   }
 
+  const getAnnouncementBarVal = (defaultVal: AnnouncementBarSetting): AnnouncementBarSetting => {
+    const raw = settingsMap.get('announcement_bar')
+    if (!raw) return defaultVal
+    const obj = raw.value && typeof raw.value === 'object' ? raw.value : raw
+    if (obj && typeof obj === 'object') {
+      const parsedMessages = Array.isArray(obj.messages)
+        ? obj.messages
+            .filter((m: any) => m && typeof m.text === 'string' && m.text.trim().length > 0)
+            .map((m: any) => ({
+              text: m.text.trim(),
+              link_url: typeof m.link_url === 'string' ? m.link_url.trim() : '',
+            }))
+        : defaultVal.messages
+
+      return {
+        is_active: typeof obj.is_active === 'boolean' ? obj.is_active : defaultVal.is_active,
+        messages: parsedMessages.length > 0 ? parsedMessages : defaultVal.messages,
+        background_color: typeof obj.background_color === 'string' && obj.background_color.trim() ? obj.background_color.trim() : defaultVal.background_color,
+        text_color: typeof obj.text_color === 'string' && obj.text_color.trim() ? obj.text_color.trim() : defaultVal.text_color,
+        dismissible: typeof obj.dismissible === 'boolean' ? obj.dismissible : defaultVal.dismissible,
+      }
+    }
+    return defaultVal
+  }
+
   return {
     low_stock_threshold: getNumVal('low_stock_threshold', DEFAULT_SETTINGS.low_stock_threshold),
     store_currency: getCurrencyVal(DEFAULT_SETTINGS.store_currency),
@@ -210,6 +272,8 @@ export function parseSettingsRows(rows: Array<{ key: string; value: any }> | nul
     footer_social: getObjectVal<FooterSocialSetting>('footer_social', DEFAULT_SETTINGS.footer_social),
     footer_copyright: getObjectVal<FooterCopyrightSetting>('footer_copyright', DEFAULT_SETTINGS.footer_copyright),
     footer_layout: getLayoutVal(DEFAULT_FOOTER_LAYOUT),
+    hero_slider_config: getObjectVal<HeroSliderConfigSetting>('hero_slider_config', DEFAULT_SETTINGS.hero_slider_config),
+    announcement_bar: getAnnouncementBarVal(DEFAULT_ANNOUNCEMENT_BAR),
   }
 }
 

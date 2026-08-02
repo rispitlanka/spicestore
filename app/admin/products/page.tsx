@@ -47,7 +47,15 @@ export default function AdminProductsPage() {
   const [basePrice, setBasePrice] = useState<number | ''>('')
   const [baseWeightKg, setBaseWeightKg] = useState<number | ''>('')
   const [description, setDescription] = useState('')
+  const [ingredients, setIngredients] = useState('')
+  const [shippingInfo, setShippingInfo] = useState('')
+  const [storageTips, setStorageTips] = useState('')
   const [isActive, setIsActive] = useState(true)
+
+  const DEFAULT_SHIPPING_INFO_STARTER =
+    'Standard delivery packed in sealed food-safe pouches. Shipping costs automatically calculated at checkout based on package weight.'
+  const DEFAULT_STORAGE_TIPS_STARTER =
+    'Store in an airtight container in a cool, dry place. Protect from heat and moisture to retain freshness and aroma.'
 
   // Image Upload state: Array of Cloudinary gallery image objects
   const [galleryImages, setGalleryImages] = useState<GalleryImageItem[]>([])
@@ -98,6 +106,9 @@ export default function AdminProductsPage() {
     setBasePrice('')
     setBaseWeightKg('')
     setDescription('')
+    setIngredients('')
+    setShippingInfo('')
+    setStorageTips('')
     setIsActive(true)
     setGalleryImages([])
     setUrlInput('')
@@ -114,6 +125,9 @@ export default function AdminProductsPage() {
     setBasePrice(product.base_price ?? '')
     setBaseWeightKg(product.base_weight_kg ?? '')
     setDescription(product.description || '')
+    setIngredients(product.ingredients || '')
+    setShippingInfo(product.shipping_info || '')
+    setStorageTips(product.storage_tips || '')
     setIsActive(product.is_active)
 
     const sortedImages = product.product_images
@@ -230,6 +244,9 @@ export default function AdminProductsPage() {
         slug: finalSlug,
         category_id: categoryId || null,
         description: description.trim() || null,
+        ingredients: ingredients.trim() || null,
+        shipping_info: shippingInfo.trim() || null,
+        storage_tips: storageTips.trim() || null,
         has_variations: hasVariations,
         base_price: hasVariations ? null : numPrice,
         base_weight_kg: hasVariations ? null : numWeight,
@@ -680,6 +697,59 @@ export default function AdminProductsPage() {
                 onChange={(e) => setDescription(e.target.value)}
                 disabled={submitting}
               />
+
+              <Textarea
+                label="Ingredients"
+                rows={3}
+                placeholder="e.g. Cinnamon, coriander, cumin, fennel... (Optional)"
+                value={ingredients}
+                onChange={(e) => setIngredients(e.target.value)}
+                disabled={submitting}
+              />
+
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-foreground/80">
+                    Shipping Info
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setShippingInfo(DEFAULT_SHIPPING_INFO_STARTER)}
+                    className="text-xs text-accent hover:underline font-semibold cursor-pointer"
+                  >
+                    Use default text
+                  </button>
+                </div>
+                <Textarea
+                  rows={3}
+                  placeholder="Custom shipping information for this product... (Optional)"
+                  value={shippingInfo}
+                  onChange={(e) => setShippingInfo(e.target.value)}
+                  disabled={submitting}
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-foreground/80">
+                    Storage Tips
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setStorageTips(DEFAULT_STORAGE_TIPS_STARTER)}
+                    className="text-xs text-accent hover:underline font-semibold cursor-pointer"
+                  >
+                    Use default text
+                  </button>
+                </div>
+                <Textarea
+                  rows={3}
+                  placeholder="e.g. Store in a cool, dry place, away from direct sunlight... (Optional)"
+                  value={storageTips}
+                  onChange={(e) => setStorageTips(e.target.value)}
+                  disabled={submitting}
+                />
+              </div>
 
               {/* Cloudinary Storage Image Gallery & Upload */}
               <div className="space-y-2 border-t border-border pt-4">

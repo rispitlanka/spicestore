@@ -52,6 +52,9 @@ export interface Database {
           name: string
           slug: string
           description: string | null
+          ingredients: string | null
+          shipping_info: string | null
+          storage_tips: string | null
           has_variations: boolean
           base_price: number | null
           base_weight_kg: number | null
@@ -64,6 +67,9 @@ export interface Database {
           name: string
           slug: string
           description?: string | null
+          ingredients?: string | null
+          shipping_info?: string | null
+          storage_tips?: string | null
           has_variations?: boolean
           base_price?: number | null
           base_weight_kg?: number | null
@@ -76,6 +82,9 @@ export interface Database {
           name?: string
           slug?: string
           description?: string | null
+          ingredients?: string | null
+          shipping_info?: string | null
+          storage_tips?: string | null
           has_variations?: boolean
           base_price?: number | null
           base_weight_kg?: number | null
@@ -546,6 +555,73 @@ export interface Database {
           }
         ]
       }
+      hero_slides: {
+        Row: {
+          id: string
+          image_url: string
+          cloudinary_public_id: string | null
+          link_url: string | null
+          sort_order: number
+          is_active: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          image_url: string
+          cloudinary_public_id?: string | null
+          link_url?: string | null
+          sort_order?: number
+          is_active?: boolean
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          image_url?: string
+          cloudinary_public_id?: string | null
+          link_url?: string | null
+          sort_order?: number
+          is_active?: boolean
+          created_at?: string
+        }
+        Relationships: []
+      }
+      homepage_categories: {
+        Row: {
+          id: string
+          category_id: string
+          image_url: string
+          cloudinary_public_id: string | null
+          sort_order: number
+          is_active: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          category_id: string
+          image_url: string
+          cloudinary_public_id?: string | null
+          sort_order?: number
+          is_active?: boolean
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          category_id?: string
+          image_url?: string
+          cloudinary_public_id?: string | null
+          sort_order?: number
+          is_active?: boolean
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "homepage_categories_category_id_fkey"
+            columns: ["category_id"]
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
     }
     Views: {
       customer_order_stats: {
@@ -605,3 +681,10 @@ export type Tables<T extends keyof Database['public']['Tables']> = Database['pub
 export type TablesInsert<T extends keyof Database['public']['Tables']> = Database['public']['Tables'][T]['Insert']
 export type TablesUpdate<T extends keyof Database['public']['Tables']> = Database['public']['Tables'][T]['Update']
 export type LegalPage = Database['public']['Tables']['legal_pages']['Row']
+export type HeroSlide = Database['public']['Tables']['hero_slides']['Row']
+export type HomepageCategory = Database['public']['Tables']['homepage_categories']['Row']
+export interface HomepageCategoryWithCategory extends HomepageCategory {
+  categories?: Pick<Tables<'categories'>, 'id' | 'name' | 'slug' | 'is_active'> | null
+}
+
+

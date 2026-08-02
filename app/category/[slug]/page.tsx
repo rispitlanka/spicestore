@@ -6,6 +6,7 @@ import { ProductCard } from '@/components/molecules/ProductCard'
 import { EmptyState } from '@/components/atoms/EmptyState'
 import { Button } from '@/components/atoms/Button'
 import { getSiteSettings } from '@/lib/settings'
+import { getProductCardImages } from '@/lib/seo'
 
 export const revalidate = 60
 
@@ -151,29 +152,13 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
       {categoryProducts.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {(categoryProducts as any[]).map((product: any) => {
-            const images = (product.product_images || []) as any[]
             const variations = ((product.product_variations || []) as any[]).filter((v) => v.is_active)
+            const { mainImage, hoverImage } = getProductCardImages(product)
 
-            let mainImg: any = null
-            if (product.has_variations && variations.length > 0) {
-              const firstVarId = variations[0].id
-              mainImg =
-                images.find((i) => i.variation_id === firstVarId && i.is_main) ||
-                images.find((i) => i.variation_id === firstVarId) ||
-                images.find((i) => !i.variation_id && i.is_main) ||
-                images.find((i) => !i.variation_id) ||
-                images[0] ||
-                null
-            } else {
-              mainImg =
-                images.find((i) => !i.variation_id && i.is_main) ||
-                images.find((i) => i.is_main) ||
-                images[0] ||
-                null
-            }
-
-            const firstImage = mainImg ? mainImg.url : null
-            const cldPublicId = mainImg ? mainImg.cloudinary_public_id : null
+            const firstImage = mainImage ? mainImage.url : null
+            const cldPublicId = mainImage ? mainImage.cloudinary_public_id : null
+            const secImage = hoverImage ? hoverImage.url : null
+            const secCldPublicId = hoverImage ? hoverImage.cloudinary_public_id : null
 
             let minPrice: number | undefined
             let maxPrice: number | undefined
@@ -200,6 +185,8 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
                   weightKg={product.base_weight_kg}
                   imageUrl={firstImage}
                   cloudinaryPublicId={cldPublicId}
+                  secondaryImageUrl={secImage}
+                  secondaryCloudinaryPublicId={secCldPublicId}
                   categoryName={product.categories?.name}
                   slug={product.slug}
                   outOfStock={isOutOfStock}

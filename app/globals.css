@@ -49,3 +49,22 @@ h1, h2, h3, h4, h5, h6, .font-heading {
   font-weight: 600;
   color: #1C2521;
 }
+
+@media (hover: hover) {
+  .group:hover .product-card-hover-image {
+    opacity: 1 !important;
+  }
+  .group:hover .product-card-main-image-has-hover {
+    opacity: 0 !important;
+  }
+}
+
+/* Custom utility for clean scrollbars */
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+

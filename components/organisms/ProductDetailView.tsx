@@ -1,14 +1,14 @@
 'use client'
 
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
 import Link from 'next/link'
 import { VariationSelector, ProductVariation } from '@/components/molecules/VariationSelector'
 import { QuantitySelector } from '@/components/molecules/QuantitySelector'
 import { Button } from '@/components/atoms/Button'
 import { useCart } from '@/context/CartContext'
 import { PriceTag } from '@/components/atoms/PriceTag'
+import { useCurrency } from '@/context/CurrencyContext'
 import { useSettings } from '@/context/SettingsContext'
-import { formatPriceWithSymbol } from '@/lib/settings'
 import { CldProductImage } from '@/components/atoms/CldProductImage'
 
 export interface ProductImageItem {
@@ -37,6 +37,9 @@ export interface RelatedProductItem {
   name: string
   slug: string
   description?: string | null
+  ingredients?: string | null
+  shipping_info?: string | null
+  storage_tips?: string | null
   base_price?: number | null
   base_weight_kg?: number | null
   has_variations: boolean
@@ -52,6 +55,9 @@ export interface ProductDetailViewProps {
     name: string
     slug: string
     description?: string | null
+    ingredients?: string | null
+    shipping_info?: string | null
+    storage_tips?: string | null
     spice_level?: number | null
     has_variations: boolean
     base_price?: number | null
@@ -71,6 +77,7 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
 }) => {
   const { addItem } = useCart()
   const { settings } = useSettings()
+  const { formatBasePrice } = useCurrency()
 
   const allImages = useMemo(() => product.product_images || [], [product.product_images])
 
@@ -127,6 +134,7 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
 
   // Expandable sections toggles
   const [openDescription, setOpenDescription] = useState(false)
+  const [openIngredients, setOpenIngredients] = useState(false)
   const [openShipping, setOpenShipping] = useState(false)
   const [openStorage, setOpenStorage] = useState(false)
 
@@ -151,7 +159,19 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
     })
   }, [selectedVariation, allImages, productDefaultImages])
 
-  const currentMainImage = activeGalleryImages[selectedImageIndex] || activeGalleryImages[0] || productDefaultImages[0]
+  useEffect(() => {
+    setSelectedImageIndex(0)
+  }, [selectedVariation])
+
+  const safeImageIndex = Math.min(
+    selectedImageIndex,
+    Math.max(0, activeGalleryImages.length - 1)
+  )
+
+  const currentMainImage =
+    activeGalleryImages[safeImageIndex] ||
+    activeGalleryImages[0] ||
+    productDefaultImages[0]
 
   const currentPrice = product.has_variations && selectedVariation
     ? selectedVariation.price
@@ -209,51 +229,68 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
       {/* 2-Column Product Layout */}
       <div className="grid grid-cols-1 md:grid-cols-12 gap-8 lg:gap-12 items-start">
         
-        {/* Left Column: Image & Small Plain Thumbnails */}
+        {/* Left Column: Image Gallery (Vertical column beside main image on desktop, horizontal below on mobile) */}
         <div className="md:col-span-6 flex flex-col gap-3">
-          {/* Main Product Image */}
-          <div className="relative aspect-square w-full rounded-sm border border-[#E7ECE8] bg-white overflow-hidden flex items-center justify-center">
-            {currentMainImage ? (
-              <CldProductImage
-                src={currentMainImage.url}
-                cloudinaryPublicId={currentMainImage.cloudinary_public_id}
-                alt={product.name}
-                width={800}
-                height={800}
-                className="h-full w-full object-cover object-center"
-              />
-            ) : (
-              <div className="text-xs text-[#6B7570]">No image available</div>
+          <div className="flex flex-col md:flex-row items-stretch gap-3 md:gap-4 w-full relative">
+            {/* Thumbnails Column (Positioned LEFT on desktop md:, below main image on mobile <md) */}
+            {activeGalleryImages.length > 1 && (
+              <div className="order-2 md:order-1 relative w-full md:w-20 shrink-0">
+                <div className="flex flex-row md:flex-col gap-2.5 overflow-x-auto md:overflow-y-auto md:absolute md:inset-0 scrollbar-none py-0.5 px-0.5">
+                  {activeGalleryImages.map((img, idx) => {
+                    const isSelected = idx === safeImageIndex
+                    return (
+                      <button
+                        key={img.id || idx}
+                        type="button"
+                        onClick={() => setSelectedImageIndex(idx)}
+                        onMouseEnter={() => setSelectedImageIndex(idx)}
+                        aria-label={`View thumbnail ${idx + 1}`}
+                        className={`relative w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 rounded-sm border overflow-hidden shrink-0 transition-all cursor-pointer ${
+                          isSelected
+                            ? 'border-[#2F6B3C] ring-1 ring-[#2F6B3C]/30 opacity-100'
+                            : 'border-[#E7ECE8] hover:border-[#6B7570] opacity-70 hover:opacity-100'
+                        }`}
+                      >
+                        <CldProductImage
+                          src={img.url}
+                          cloudinaryPublicId={img.cloudinary_public_id}
+                          alt={`Thumbnail ${idx + 1}`}
+                          width={120}
+                          height={120}
+                          className="w-full h-full object-cover object-center"
+                        />
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
             )}
-          </div>
 
-          {/* Thumbnails below (small and plain) */}
-          {activeGalleryImages.length > 1 && (
-            <div className="flex items-center gap-2 overflow-x-auto pb-1">
-              {activeGalleryImages.map((img, idx) => {
-                const isSelected = idx === selectedImageIndex
-                return (
-                  <button
-                    key={img.id || idx}
-                    type="button"
-                    onClick={() => setSelectedImageIndex(idx)}
-                    className={`w-14 h-14 rounded-sm border overflow-hidden shrink-0 transition-colors ${
-                      isSelected ? 'border-[#2F6B3C]' : 'border-[#E7ECE8] hover:border-[#6B7570]'
-                    }`}
-                  >
+            {/* Main Product Image Container */}
+            <div className="order-1 md:order-2 relative aspect-square flex-1 w-full rounded-sm border border-[#E7ECE8] bg-white overflow-hidden flex items-center justify-center">
+              {activeGalleryImages.length > 0 ? (
+                activeGalleryImages.map((img, idx) => {
+                  const isSelected = idx === safeImageIndex
+                  return (
                     <CldProductImage
+                      key={img.id || img.url || idx}
                       src={img.url}
                       cloudinaryPublicId={img.cloudinary_public_id}
-                      alt={`Thumbnail ${idx}`}
-                      width={100}
-                      height={100}
-                      className="w-full h-full object-cover"
+                      alt={`${product.name} view ${idx + 1}`}
+                      width={800}
+                      height={800}
+                      priority={idx === 0}
+                      className={`absolute inset-0 h-full w-full object-cover object-center transition-opacity duration-300 ease-in-out ${
+                        isSelected ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'
+                      }`}
                     />
-                  </button>
-                )
-              })}
+                  )
+                })
+              ) : (
+                <div className="text-xs text-[#6B7570]">No image available</div>
+              )}
             </div>
-          )}
+          </div>
         </div>
 
         {/* Right Column: Undecorated Details */}
@@ -353,7 +390,7 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
                 ? '✓ Added to Cart'
                 : isOutOfStock
                 ? 'Out of Stock'
-                : `Add to cart — ${formatPriceWithSymbol(currentPrice * quantity, settings.store_currency.symbol)}`}
+                : `Add to cart — ${formatBasePrice(currentPrice * quantity)}`}
             </Button>
           </div>
 
@@ -375,6 +412,24 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
               )}
             </div>
 
+            {/* Ingredients Toggle */}
+            {product.ingredients?.trim() && (
+              <div className="border-b border-[#E7ECE8] pb-3">
+                <button
+                  type="button"
+                  onClick={() => setOpenIngredients(!openIngredients)}
+                  className="flex items-center justify-between w-full py-1 text-left font-medium text-[#1C2521] hover:text-[#2F6B3C] transition-colors"
+                >
+                  <span>{openIngredients ? '− Ingredients' : '+ Ingredients'}</span>
+                </button>
+                {openIngredients && (
+                  <div className="mt-2 text-xs sm:text-sm text-[#6B7570] leading-relaxed whitespace-pre-line">
+                    {product.ingredients}
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Shipping Info Toggle */}
             <div className="border-b border-[#E7ECE8] pb-3">
               <button
@@ -385,28 +440,31 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
                 <span>{openShipping ? '− Shipping Info' : '+ Shipping Info'}</span>
               </button>
               {openShipping && (
-                <div className="mt-2 text-xs sm:text-sm text-[#6B7570] leading-relaxed space-y-1">
-                  <p>Standard delivery packed in sealed food-safe pouches.</p>
-                  <p>Shipping costs automatically calculated at checkout based on package weight.</p>
+                <div className="mt-2 text-xs sm:text-sm text-[#6B7570] leading-relaxed whitespace-pre-line">
+                  {product.shipping_info?.trim() ||
+                    settings.default_shipping_note ||
+                    'Standard delivery packed in sealed food-safe pouches.\nShipping costs automatically calculated at checkout based on package weight.'}
                 </div>
               )}
             </div>
 
-            {/* Storage Tips Toggle */}
-            <div className="border-b border-[#E7ECE8] pb-3">
-              <button
-                type="button"
-                onClick={() => setOpenStorage(!openStorage)}
-                className="flex items-center justify-between w-full py-1 text-left font-medium text-[#1C2521] hover:text-[#2F6B3C] transition-colors"
-              >
-                <span>{openStorage ? '− Storage Tips' : '+ Storage Tips'}</span>
-              </button>
-              {openStorage && (
-                <div className="mt-2 text-xs sm:text-sm text-[#6B7570] leading-relaxed">
-                  Store in an airtight container in a cool, dry place. Protect from heat and moisture to retain freshness and aroma.
-                </div>
-              )}
-            </div>
+            {/* Storage Tips Toggle (only render if storage_tips is set for this product) */}
+            {product.storage_tips?.trim() && (
+              <div className="border-b border-[#E7ECE8] pb-3">
+                <button
+                  type="button"
+                  onClick={() => setOpenStorage(!openStorage)}
+                  className="flex items-center justify-between w-full py-1 text-left font-medium text-[#1C2521] hover:text-[#2F6B3C] transition-colors"
+                >
+                  <span>{openStorage ? '− Storage Tips' : '+ Storage Tips'}</span>
+                </button>
+                {openStorage && (
+                  <div className="mt-2 text-xs sm:text-sm text-[#6B7570] leading-relaxed whitespace-pre-line">
+                    {product.storage_tips}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
         </div>

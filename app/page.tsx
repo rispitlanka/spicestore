@@ -4,7 +4,11 @@ import { createClient } from '@/lib/supabase/server'
 import { ProductCard } from '@/components/molecules/ProductCard'
 import { EmptyState } from '@/components/atoms/EmptyState'
 import { Button } from '@/components/atoms/Button'
+import { HeroSlider } from '@/components/organisms/HeroSlider'
+import { CategoryShowcase } from '@/components/organisms/CategoryShowcase'
 import { getSiteSettings } from '@/lib/settings'
+import { getProductCardImages } from '@/lib/seo'
+
 
 export const revalidate = 60
 
@@ -59,31 +63,13 @@ interface PageProps {
 }
 
 function processProduct(product: ProductItem) {
-  const images = product.product_images || []
   const activeVariations = (product.product_variations || []).filter((v) => v.is_active)
+  const { mainImage, hoverImage } = getProductCardImages(product)
 
-  let cardImageObj: (typeof images)[0] | null = null
-
-  if (product.has_variations && activeVariations.length > 0) {
-    const firstVarId = activeVariations[0].id
-    cardImageObj =
-      images.find((i) => i.variation_id === firstVarId && i.is_main) ||
-      images.find((i) => i.variation_id === firstVarId) ||
-      images.find((i) => !i.variation_id && i.is_main) ||
-      images.find((i) => !i.variation_id) ||
-      images[0] ||
-      null
-  } else {
-    cardImageObj =
-      images.find((i) => !i.variation_id && i.is_main) ||
-      images.find((i) => i.is_main) ||
-      images[0] ||
-      null
-  }
-
-  const firstImage = cardImageObj ? cardImageObj.url : null
-  const cloudinaryPublicId = cardImageObj ? cardImageObj.cloudinary_public_id : null
-
+  const firstImage = mainImage ? mainImage.url : null
+  const cloudinaryPublicId = mainImage ? mainImage.cloudinary_public_id : null
+  const secondaryImage = hoverImage ? hoverImage.url : null
+  const secondaryCloudinaryPublicId = hoverImage ? hoverImage.cloudinary_public_id : null
 
   let minPrice: number | undefined
   let maxPrice: number | undefined
@@ -117,6 +103,8 @@ function processProduct(product: ProductItem) {
     ...product,
     firstImage,
     cloudinaryPublicId,
+    secondaryImage,
+    secondaryCloudinaryPublicId,
     effectivePrice,
     minPrice,
     maxPrice,
@@ -194,46 +182,12 @@ export default async function HomePage({ searchParams }: PageProps) {
           </h1>
         </div>
 
-        {/* Quiet photo strip: max 300px tall, purely visual, no text on top */}
-        <div className="w-full h-44 sm:h-56 overflow-hidden rounded-md bg-[#F4F6F4]">
-          <img
-            src="https://images.unsplash.com/photo-1596040033229-a9821ebd058d?auto=format&fit=crop&w=1600&q=80"
-            alt="Jaffna spices and snacks visual strip"
-            className="w-full h-full object-cover"
-          />
-        </div>
+        {/* Hero Slider: admin configurable responsive image slider */}
+        <HeroSlider />
 
-        {/* 2. Category links: simple horizontal row of plain text links */}
-        <div className="flex items-center gap-4 sm:gap-6 overflow-x-auto border-b border-[#E7ECE8] pb-1 text-sm no-scrollbar">
-          <Link
-            href={sort ? `/?sort=${sort}` : '/'}
-            className={
-              !category
-                ? 'text-[#2F6B3C] font-semibold border-b-2 border-[#2F6B3C] pb-2 -mb-1 whitespace-nowrap min-h-[44px] inline-flex items-center'
-                : 'text-[#6B7570] hover:text-[#1C2521] font-normal transition-colors pb-2 whitespace-nowrap min-h-[44px] inline-flex items-center'
-            }
-          >
-            All Products
-          </Link>
+        {/* 2. Category showcase: admin configurable minimal image-based showcase (with fallback to text tabs) */}
+        <CategoryShowcase categories={categories} currentCategory={category} sort={sort} />
 
-          {categories.map((cat) => {
-            const isSelected = category === cat.slug
-            const href = sort ? `/?category=${cat.slug}&sort=${sort}` : `/?category=${cat.slug}`
-            return (
-              <Link
-                key={cat.id}
-                href={href}
-                className={
-                  isSelected
-                    ? 'text-[#2F6B3C] font-semibold border-b-2 border-[#2F6B3C] pb-2 -mb-1 whitespace-nowrap min-h-[44px] inline-flex items-center'
-                    : 'text-[#6B7570] hover:text-[#1C2521] font-normal transition-colors pb-2 whitespace-nowrap min-h-[44px] inline-flex items-center'
-                }
-              >
-                {cat.name}
-              </Link>
-            )
-          })}
-        </div>
 
         {/* 3. Single Product Grid section header */}
         <div className="flex flex-row items-center justify-between gap-4 pt-2">
@@ -284,6 +238,9 @@ export default async function HomePage({ searchParams }: PageProps) {
                   hasVariations={product.has_variations}
                   weightKg={product.base_weight_kg}
                   imageUrl={product.firstImage}
+                  cloudinaryPublicId={product.cloudinaryPublicId}
+                  secondaryImageUrl={product.secondaryImage}
+                  secondaryCloudinaryPublicId={product.secondaryCloudinaryPublicId}
                   categoryName={product.categories?.name}
                   slug={product.slug}
                   outOfStock={product.isOutOfStock}

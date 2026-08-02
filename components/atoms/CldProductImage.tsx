@@ -61,6 +61,7 @@ export const CldProductImage: React.FC<CldProductImageProps> = ({
         quality="auto"
         crop="fill"
         className={className}
+        priority={priority}
         onError={handleImageError}
       />
     )

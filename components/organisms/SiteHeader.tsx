@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useCart } from '@/context/CartContext'
 import { useAuth } from '@/context/AuthContext'
+import { useCurrency } from '@/context/CurrencyContext'
 import { useSettings } from '@/context/SettingsContext'
 import { formatPriceWithSymbol } from '@/lib/settings'
 import { SearchProductItem, MatchedCategory } from '@/lib/search/searchProducts'
@@ -25,6 +26,7 @@ export const SiteHeader: React.FC = () => {
   const { openCart, totalItems, isHydrated } = useCart()
   const { user } = useAuth()
   const { settings } = useSettings()
+  const { formatBasePrice } = useCurrency()
 
   const [navItems, setNavItems] = useState<ResolvedMenuItem[]>(DEFAULT_NAV_LINKS)
   const [searchExpanded, setSearchExpanded] = useState(false)
@@ -286,8 +288,8 @@ export const SiteHeader: React.FC = () => {
                     {searchResults.slice(0, 6).map((item) => {
                       const displayPrice =
                         item.min_price > 0 && item.min_price < item.max_price
-                          ? `${formatPriceWithSymbol(item.min_price, settings.store_currency.symbol)} - ${formatPriceWithSymbol(item.max_price, settings.store_currency.symbol)}`
-                          : formatPriceWithSymbol(item.effectivePrice, settings.store_currency.symbol)
+                          ? `${formatBasePrice(item.min_price)} - ${formatBasePrice(item.max_price)}`
+                          : formatBasePrice(item.effectivePrice)
 
                       return (
                         <Link

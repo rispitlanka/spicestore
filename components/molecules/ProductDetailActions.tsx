@@ -7,8 +7,8 @@ import { QuantitySelector } from './QuantitySelector'
 import { Button } from '../atoms/Button'
 import { PriceTag } from '../atoms/PriceTag'
 import { WeightTag } from '../atoms/WeightTag'
+import { useCurrency } from '@/context/CurrencyContext'
 import { useSettings } from '@/context/SettingsContext'
-import { formatPriceWithSymbol } from '@/lib/settings'
 import { Tables } from '@/types/database'
 import { useCart } from '@/context/CartContext'
 
@@ -37,12 +37,13 @@ export const ProductDetailActions: React.FC<ProductDetailActionsProps> = ({
   basePrice = 0,
   baseWeightKg = null,
   outOfStock = false,
-  currency = 'USD',
+  currency,
   onAddToCart,
   className,
 }) => {
   const { addItem } = useCart()
   const { settings } = useSettings()
+  const { formatBasePrice } = useCurrency()
   const activeVariations = variations.filter((v) => v.is_active)
   const [selectedVariationId, setSelectedVariationId] = useState<string>(
     activeVariations.length > 0 ? activeVariations[0].id : ''
@@ -96,7 +97,7 @@ export const ProductDetailActions: React.FC<ProductDetailActionsProps> = ({
       label = `SKU: ${v.sku}`
     }
     return {
-      label: `${label} - ${formatPriceWithSymbol(v.price, settings.store_currency.symbol)} (${v.weight_kg}kg)`,
+      label: `${label} - ${formatBasePrice(v.price)} (${v.weight_kg}kg)`,
       value: v.id,
       disabled: v.stock <= 0,
     }

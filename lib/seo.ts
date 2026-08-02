@@ -76,47 +76,87 @@ export function getBaseUrl(): string {
   return 'https://yarlsamayal.com'
 }
 
-/**
- * Resolves main product image URL respecting variation-scoped main image logic.
- */
+export interface ProductImageItem {
+  id?: string
+  url: string
+  sort_order?: number | null
+  is_main?: boolean | null
+  cloudinary_public_id?: string | null
+  variation_id?: string | null
+}
 
-export function getProductMainImageUrl(product: {
+export interface ProductVariationItem {
+  id: string
+  is_active?: boolean | null
+}
+
+export interface ProductCardImagesInput {
   has_variations?: boolean
-  product_images?: Array<{
-    url: string
-    is_main?: boolean | null
-    variation_id?: string | null
-  }> | null
-  product_variations?: Array<{
-    id: string
-    is_active?: boolean | null
-  }> | null
-}): string | null {
+  product_images?: ProductImageItem[] | null
+  product_variations?: ProductVariationItem[] | null
+}
+
+export interface ProductCardImagesResult {
+  mainImage: ProductImageItem | null
+  hoverImage: ProductImageItem | null
+}
+
+/**
+ * Resolves main product image and hover product image (next in sort_order) respecting variation-scoped logic.
+ */
+export function getProductCardImages(product?: ProductCardImagesInput | null): ProductCardImagesResult {
   const images = product?.product_images || []
-  if (images.length === 0) return null
+  if (!images || images.length === 0) {
+    return { mainImage: null, hoverImage: null }
+  }
 
   const activeVariations = (product?.product_variations || []).filter((v) => v.is_active !== false)
 
-  let mainImg: (typeof images)[0] | null = null
+  let scopedImages: ProductImageItem[] = []
 
   if (product?.has_variations && activeVariations.length > 0) {
     const firstVarId = activeVariations[0].id
-    mainImg =
-      images.find((i) => i.variation_id === firstVarId && i.is_main) ||
-      images.find((i) => i.variation_id === firstVarId) ||
-      images.find((i) => !i.variation_id && i.is_main) ||
-      images.find((i) => i.is_main) ||
-      images.find((i) => !i.variation_id) ||
-      images[0] ||
-      null
+    scopedImages = images.filter((i) => i.variation_id === firstVarId)
+    if (scopedImages.length === 0) {
+      scopedImages = images.filter((i) => !i.variation_id)
+    }
+    if (scopedImages.length === 0) {
+      scopedImages = images
+    }
   } else {
-    mainImg =
-      images.find((i) => !i.variation_id && i.is_main) ||
-      images.find((i) => i.is_main) ||
-      images.find((i) => !i.variation_id) ||
-      images[0] ||
-      null
+    scopedImages = images.filter((i) => !i.variation_id)
+    if (scopedImages.length === 0) {
+      scopedImages = images
+    }
   }
 
-  return mainImg ? mainImg.url : null
+  const sortedScopedImages = [...scopedImages].sort(
+    (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0)
+  )
+
+  const mainImage = sortedScopedImages.find((i) => i.is_main) || sortedScopedImages[0] || null
+
+  if (!mainImage) {
+    return { mainImage: null, hoverImage: null }
+  }
+
+  const mainIndex = sortedScopedImages.findIndex((i) =>
+    i.id && mainImage.id ? i.id === mainImage.id : i === mainImage
+  )
+
+  const hoverImage =
+    mainIndex !== -1 && mainIndex + 1 < sortedScopedImages.length
+      ? sortedScopedImages[mainIndex + 1]
+      : null
+
+  return { mainImage, hoverImage }
 }
+
+/**
+ * Resolves main product image URL respecting variation-scoped main image logic.
+ */
+export function getProductMainImageUrl(product: ProductCardImagesInput | null | undefined): string | null {
+  const { mainImage } = getProductCardImages(product)
+  return mainImage ? mainImage.url : null
+}
+

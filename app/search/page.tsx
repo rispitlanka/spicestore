@@ -92,6 +92,9 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                 hasVariations={product.has_variations}
                 weightKg={product.base_weight_kg}
                 imageUrl={product.image_url}
+                cloudinaryPublicId={product.cloudinary_public_id}
+                secondaryImageUrl={product.secondary_image_url}
+                secondaryCloudinaryPublicId={product.secondary_cloudinary_public_id}
                 categoryName={product.category_name || undefined}
                 slug={product.slug}
                 outOfStock={product.is_out_of_stock}

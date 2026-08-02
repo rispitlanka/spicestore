@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { getProductCardImages } from '@/lib/seo'
 
 export interface SearchProductItem {
   id: string
@@ -18,6 +19,9 @@ export interface SearchProductItem {
   total_stock: number
   is_out_of_stock: boolean
   image_url: string | null
+  cloudinary_public_id?: string | null
+  secondary_image_url?: string | null
+  secondary_cloudinary_public_id?: string | null
   rank?: number
 }
 
@@ -116,7 +120,7 @@ export async function searchProducts(rawQuery: string): Promise<SearchResult> {
       .select(`
         *,
         categories (id, name, slug),
-        product_images (id, url, sort_order, is_main, variation_id),
+        product_images (id, url, sort_order, is_main, cloudinary_public_id, variation_id),
         product_variations (id, price, stock, is_active)
       `)
       .eq('is_active', true)
@@ -137,26 +141,8 @@ export async function searchProducts(rawQuery: string): Promise<SearchResult> {
 
     const products: SearchProductItem[] = rawProducts
       .map((p: any) => {
-        const images = p.product_images || []
         const activeVariations = (p.product_variations || []).filter((v: any) => v.is_active)
-
-        let mainImg: any = null
-        if (p.has_variations && activeVariations.length > 0) {
-          const firstVarId = activeVariations[0].id
-          mainImg =
-            images.find((i: any) => i.variation_id === firstVarId && i.is_main) ||
-            images.find((i: any) => i.variation_id === firstVarId) ||
-            images.find((i: any) => !i.variation_id && i.is_main) ||
-            images.find((i: any) => !i.variation_id) ||
-            images[0] ||
-            null
-        } else {
-          mainImg =
-            images.find((i: any) => !i.variation_id && i.is_main) ||
-            images.find((i: any) => i.is_main) ||
-            images[0] ||
-            null
-        }
+        const { mainImage, hoverImage } = getProductCardImages(p)
 
         let minPrice = 0
         let maxPrice = 0
@@ -197,7 +183,10 @@ export async function searchProducts(rawQuery: string): Promise<SearchResult> {
           effectivePrice,
           total_stock: totalStock,
           is_out_of_stock: isOutOfStock,
-          image_url: mainImg ? mainImg.url : null,
+          image_url: mainImage ? mainImage.url : null,
+          cloudinary_public_id: mainImage ? mainImage.cloudinary_public_id : null,
+          secondary_image_url: hoverImage ? hoverImage.url : null,
+          secondary_cloudinary_public_id: hoverImage ? hoverImage.cloudinary_public_id : null,
         }
       })
       // Sort exact or start matches first

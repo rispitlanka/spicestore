@@ -19,6 +19,8 @@ export interface ProductCardProps extends React.HTMLAttributes<HTMLDivElement> {
   weightKg?: number | string | null
   imageUrl?: string | null
   cloudinaryPublicId?: string | null
+  secondaryImageUrl?: string | null
+  secondaryCloudinaryPublicId?: string | null
   categoryName?: string
   slug?: string
   outOfStock?: boolean
@@ -39,13 +41,15 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   weightKg,
   imageUrl,
   cloudinaryPublicId,
+  secondaryImageUrl,
+  secondaryCloudinaryPublicId,
   categoryName,
   slug,
   outOfStock = false,
   isAddingToCart = false,
   onAddToCart,
   onCardClick,
-  currency = 'USD',
+  currency,
   className,
   ...props
 }) => {
@@ -80,6 +84,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({
     hasVariations ||
     (minPrice !== undefined && maxPrice !== undefined && minPrice < maxPrice)
 
+  const hasSecondaryImage = Boolean(secondaryImageUrl || secondaryCloudinaryPublicId)
+
   return (
     <div
       onClick={handleCardClick}
@@ -91,19 +97,36 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       {...props}
     >
       {/* Product Image */}
-      <div className="relative aspect-square w-full bg-white overflow-hidden flex items-center justify-center border-b border-[#E7ECE8]">
+      <div className="relative aspect-square w-full bg-white overflow-hidden border-b border-[#E7ECE8]">
+        {/* Main image */}
         <CldProductImage
           src={imageUrl}
           cloudinaryPublicId={cloudinaryPublicId}
           alt={name}
           width={500}
           height={500}
-          className="h-full w-full object-cover object-center group-hover:scale-102 transition-transform duration-200"
+          className={cn(
+            'absolute inset-0 h-full w-full object-cover object-center group-hover:scale-102 transition-all duration-300 ease-in-out opacity-100',
+            hasSecondaryImage && 'product-card-main-image-has-hover'
+          )}
         />
+
+        {/* Hover image (preloaded eagerly, stacked directly on top of main image) */}
+        {hasSecondaryImage && (
+          <CldProductImage
+            src={secondaryImageUrl}
+            cloudinaryPublicId={secondaryCloudinaryPublicId}
+            alt={`${name} hover preview`}
+            width={500}
+            height={500}
+            priority={true}
+            className="absolute inset-0 h-full w-full object-cover object-center group-hover:scale-102 opacity-0 transition-all duration-300 ease-in-out pointer-events-none product-card-hover-image"
+          />
+        )}
 
         {/* Out of Stock notice (Plain text, no fill background pill) */}
         {outOfStock && (
-          <span className="absolute top-2 left-2 text-[11px] font-medium text-[#6B7570]">
+          <span className="absolute top-2 left-2 z-10 text-[11px] font-medium text-[#6B7570]">
             Out of stock
           </span>
         )}

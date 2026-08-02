@@ -49,7 +49,7 @@ export const VariationSelector: React.FC<VariationSelectorProps> = ({
   onVariationChange,
   onAttributeChange,
   showDetailsSummary = true,
-  currency = 'USD',
+  currency,
   className,
   ...props
 }) => {

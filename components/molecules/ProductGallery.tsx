@@ -39,16 +39,69 @@ export const ProductGallery: React.FC<ProductGalleryProps> = ({
   }
 
   return (
-    <div className={cn('flex flex-col gap-4', className)}>
+    <div className={cn('flex flex-col md:flex-row items-stretch gap-3 md:gap-4 w-full relative', className)}>
+      {/* Thumbnails list (Positioned LEFT on desktop md:, below main image on mobile <md) */}
+      {sortedImages.length > 1 && (
+        <div className="order-2 md:order-1 relative w-full md:w-20 shrink-0">
+          <div className="flex flex-row md:flex-col gap-2.5 overflow-x-auto md:overflow-y-auto md:absolute md:inset-0 scrollbar-none py-0.5 px-0.5">
+            {sortedImages.map((img, idx) => {
+              const isSelected = idx === safeIndex
+              const isFailed = imageError[idx]
+
+              return (
+                <button
+                  key={img.id || idx}
+                  type="button"
+                  onClick={() => setSelectedIndex(idx)}
+                  onMouseEnter={() => setSelectedIndex(idx)}
+                  aria-label={`Select image ${idx + 1}`}
+                  className={cn(
+                    'relative w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 shrink-0 rounded-sm border overflow-hidden transition-all cursor-pointer',
+                    isSelected
+                      ? 'border-[#2F6B3C] ring-1 ring-[#2F6B3C]/30 opacity-100'
+                      : 'border-[#E7ECE8] hover:border-[#6B7570] opacity-70 hover:opacity-100'
+                  )}
+                >
+                  {!isFailed ? (
+                    <img
+                      src={img.url}
+                      alt=""
+                      onError={() => handleImageError(idx)}
+                      className="h-full w-full object-cover object-center"
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center text-xs text-muted">
+                      N/A
+                    </div>
+                  )}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Main Image View */}
-      <div className="relative aspect-square w-full rounded-2xl border border-border bg-[#F4F6F4] overflow-hidden flex items-center justify-center shadow-xs">
-        {currentImage && !imageError[selectedIndex] ? (
-          <img
-            src={currentImage.url}
-            alt={`${productName} view ${selectedIndex + 1}`}
-            onError={() => handleImageError(selectedIndex)}
-            className="h-full w-full object-cover object-center transition-all duration-300"
-          />
+      <div className="order-1 md:order-2 relative aspect-square flex-1 w-full rounded-sm border border-[#E7ECE8] bg-white overflow-hidden flex items-center justify-center">
+        {sortedImages.length > 0 ? (
+          sortedImages.map((img, idx) => {
+            const isSelected = idx === safeIndex
+            const isFailed = imageError[idx]
+            if (isFailed) return null
+
+            return (
+              <img
+                key={img.id || img.url || idx}
+                src={img.url}
+                alt={`${productName} view ${idx + 1}`}
+                onError={() => handleImageError(idx)}
+                className={cn(
+                  'absolute inset-0 h-full w-full object-cover object-center transition-opacity duration-300 ease-in-out',
+                  isSelected ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'
+                )}
+              />
+            )
+          })
         ) : (
           <div className="flex flex-col items-center justify-center text-muted/40 p-6">
             <svg
@@ -67,44 +120,6 @@ export const ProductGallery: React.FC<ProductGalleryProps> = ({
           </div>
         )}
       </div>
-
-      {/* Thumbnails list */}
-      {sortedImages.length > 1 && (
-        <div className="flex items-center gap-3 overflow-x-auto pb-1 scrollbar-none">
-          {sortedImages.map((img, idx) => {
-            const isSelected = idx === selectedIndex
-            const isFailed = imageError[idx]
-
-            return (
-              <button
-                key={img.id || idx}
-                type="button"
-                onClick={() => setSelectedIndex(idx)}
-                aria-label={`Select image ${idx + 1}`}
-                className={cn(
-                  'relative h-20 w-20 shrink-0 rounded-lg border-2 bg-[#F4F6F4] overflow-hidden transition-all cursor-pointer',
-                  isSelected
-                    ? 'border-accent ring-2 ring-accent/20'
-                    : 'border-border hover:border-muted/50'
-                )}
-              >
-                {!isFailed ? (
-                  <img
-                    src={img.url}
-                    alt=""
-                    onError={() => handleImageError(idx)}
-                    className="h-full w-full object-cover object-center"
-                  />
-                ) : (
-                  <div className="flex h-full w-full items-center justify-center text-xs text-muted">
-                    N/A
-                  </div>
-                )}
-              </button>
-            )
-          })}
-        </div>
-      )}
     </div>
   )
 }

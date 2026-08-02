@@ -5,7 +5,7 @@ import { CartProvider } from '@/context/CartContext'
 import { AuthProvider } from '@/context/AuthContext'
 import { SettingsProvider } from '@/context/SettingsContext'
 import { CurrencyProvider } from '@/context/CurrencyContext'
-import { SiteHeader, SiteFooter, CartDrawer } from '@/components/organisms'
+import { SiteHeader, SiteFooter, CartDrawer, AnnouncementBar } from '@/components/organisms'
 
 import { getSiteSettings } from '@/lib/settings'
 
@@ -51,6 +51,7 @@ export default function RootLayout({
           <SettingsProvider>
             <CurrencyProvider>
               <CartProvider>
+                <AnnouncementBar />
                 <SiteHeader />
                 <div className="flex-1">{children}</div>
                 <SiteFooter />
